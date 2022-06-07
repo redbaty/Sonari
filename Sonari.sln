@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sonari", "Sonari\Sonari.csproj", "{C88709F4-5E83-43BF-9D90-F713E9BE18AF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Integrations", "Integrations", "{BAF21BCA-2B7F-475F-9104-7AC9042D436F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sonari.Sonarr", "Sonari.Sonarr\Sonari.Sonarr.csproj", "{7F03117E-BD38-424A-9081-57CD59D45C87}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sonari.App", "Sonari.App\Sonari.App.csproj", "{93ADA3C0-EA73-44D7-BC77-A4349953B50C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sonari.Kubernetes", "Sonari.Kubernetes\Sonari.Kubernetes.csproj", "{FB46ED7D-7EEB-47CA-B722-5AD626BEEE32}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C88709F4-5E83-43BF-9D90-F713E9BE18AF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C88709F4-5E83-43BF-9D90-F713E9BE18AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C88709F4-5E83-43BF-9D90-F713E9BE18AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C88709F4-5E83-43BF-9D90-F713E9BE18AF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F03117E-BD38-424A-9081-57CD59D45C87}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F03117E-BD38-424A-9081-57CD59D45C87}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F03117E-BD38-424A-9081-57CD59D45C87}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F03117E-BD38-424A-9081-57CD59D45C87}.Release|Any CPU.Build.0 = Release|Any CPU
+		{93ADA3C0-EA73-44D7-BC77-A4349953B50C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93ADA3C0-EA73-44D7-BC77-A4349953B50C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93ADA3C0-EA73-44D7-BC77-A4349953B50C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93ADA3C0-EA73-44D7-BC77-A4349953B50C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FB46ED7D-7EEB-47CA-B722-5AD626BEEE32}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FB46ED7D-7EEB-47CA-B722-5AD626BEEE32}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FB46ED7D-7EEB-47CA-B722-5AD626BEEE32}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FB46ED7D-7EEB-47CA-B722-5AD626BEEE32}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7F03117E-BD38-424A-9081-57CD59D45C87} = {BAF21BCA-2B7F-475F-9104-7AC9042D436F}
+		{FB46ED7D-7EEB-47CA-B722-5AD626BEEE32} = {BAF21BCA-2B7F-475F-9104-7AC9042D436F}
+	EndGlobalSection
+EndGlobal

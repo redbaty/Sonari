@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net6.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="CliFx" Version="2.2.5" />
+      <PackageReference Include="KubernetesClient" Version="8.0.8" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Sonari.App\Sonari.App.csproj" />
+      <ProjectReference Include="..\Sonari.Kubernetes\Sonari.Kubernetes.csproj" />
+      <ProjectReference Include="..\Sonari.Sonarr\Sonari.Sonarr.csproj" />
+    </ItemGroup>
+
+</Project>
