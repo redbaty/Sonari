@@ -13,6 +13,9 @@ public static class AppExtensions
 
             if (options != null)
             {
+                if (options.Value.BaseAddress == null)
+                    throw new InvalidOperationException("No URL was provided to Sonarr Service");
+
                 c.BaseAddress = options.Value.BaseAddress;
                 c.DefaultRequestHeaders.Add("X-Api-Key", options.Value.Key);
             }

@@ -3,13 +3,6 @@ using Sonari.Sonarr.Models;
 
 namespace Sonari.Sonarr;
 
-public class SonarrOptions
-{
-    public Uri BaseAddress { get; set; }
-    
-    public string Key { get; set; }
-}
-
 public class SonarrService
 {
     public SonarrService(HttpClient httpClient)
@@ -19,13 +12,28 @@ public class SonarrService
 
     private HttpClient HttpClient { get; }
 
-    public async IAsyncEnumerable<Tag> GetTags()
+    private async Task<Command?> CreateCommand(string name)
     {
-        var tagsArray = await HttpClient.GetFromJsonAsync<Tag[]>("tag");
+        using var resposta = await HttpClient.PostAsJsonAsync("command", new { name });
+        return await resposta.Content.ReadFromJsonAsync<Command>();
+    }
 
-        if (tagsArray != null)
-            foreach (var tag in tagsArray)
-                yield return tag;
+    private Task<Command?> GetCommandStatus(int id) => HttpClient.GetFromJsonAsync<Command>($"command/{id}");
+
+    public async Task CreateAndAwaitCommand(string name)
+    {
+        var command = await CreateCommand(name);
+
+        if (command == null)
+            throw new InvalidOperationException("Failed to create sonarr command");
+
+        var status = await GetCommandStatus(command.Id);
+
+        while (status is not { Status: "completed" })
+        {
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            status = await GetCommandStatus(command.Id);
+        }
     }
 
     public async IAsyncEnumerable<Episode> GetEpisodes(int seriesId)

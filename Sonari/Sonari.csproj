@@ -12,10 +12,14 @@
       <PackageReference Include="CliFx" Version="2.2.5" />
       <PackageReference Include="KubernetesClient" Version="8.0.8" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
+      <PackageReference Include="Serilog" Version="2.11.0" />
+      <PackageReference Include="Serilog.Extensions.Logging" Version="3.1.0" />
+      <PackageReference Include="Serilog.Sinks.Console" Version="4.0.1" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\Sonari.App\Sonari.App.csproj" />
+      <ProjectReference Include="..\Sonari.Crunchyroll\Sonari.Crunchyroll.csproj" />
       <ProjectReference Include="..\Sonari.Kubernetes\Sonari.Kubernetes.csproj" />
       <ProjectReference Include="..\Sonari.Sonarr\Sonari.Sonarr.csproj" />
     </ItemGroup>
