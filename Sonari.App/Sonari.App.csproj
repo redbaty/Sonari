@@ -7,13 +7,14 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Sonari.Crunchyroll\Sonari.Crunchyroll.csproj" />
-      <ProjectReference Include="..\Sonari.Kubernetes\Sonari.Kubernetes.csproj" />
-      <ProjectReference Include="..\Sonari.Sonarr\Sonari.Sonarr.csproj" />
+        <ProjectReference Include="..\Sonari.Crunchyroll\Sonari.Crunchyroll.csproj" />
+        <ProjectReference Include="..\Sonari.Kubernetes\Sonari.Kubernetes.csproj" />
+        <ProjectReference Include="..\Sonari.Sonarr\Sonari.Sonarr.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="System.Linq.Async" Version="6.0.1" />
+        <PackageReference Include="System.Linq.Async" Version="6.0.1" />
+        <PackageReference Include="TomLonghurst.EnumerableAsyncProcessor" Version="1.1.0" />
     </ItemGroup>
 
 </Project>
