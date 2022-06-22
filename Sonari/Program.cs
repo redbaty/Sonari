@@ -20,6 +20,7 @@ internal static class Program
         
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddScoped<DefaultCommand>();
+        serviceCollection.AddScoped<CheckCommand>();
         serviceCollection.AddSonarrServices();
         serviceCollection.AddSonariServices();
         serviceCollection.AddKubernetesServices();
@@ -30,7 +31,8 @@ internal static class Program
         
         return await new CliApplicationBuilder()
             .AddCommand<DefaultCommand>()
-            .UseTypeActivator(serviceProvider.GetService)
+            .AddCommand<CheckCommand>()
+            .UseTypeActivator(serviceProvider)
             .Build()
             .RunAsync(args);
     }
