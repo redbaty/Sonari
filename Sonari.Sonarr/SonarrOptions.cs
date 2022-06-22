@@ -7,4 +7,6 @@ public class SonarrOptions
     public string? Key { get; set; }
     
     public int TagId { get; set; }
+
+    public string? Prefix { get; set; } = "job-sonari";
 }
