@@ -25,7 +25,7 @@ public class KubernetesService
             Value = environmentVariable.Value?.ToString()
         };
 
-    private V1Job CreateJobDefinition(string name, string url, int episode, int season, int seriesId)
+    private V1Job CreateJobDefinition(string name, string url, int episode, int season)
     {
         const string mountPath = "/output";
         return new V1Job
@@ -113,9 +113,9 @@ public class KubernetesService
             yield return jobsItem;
     }
 
-    public Task<V1Job> CreateJob(string name, string url, int episode, int season, int seriesId)
+    public Task<V1Job> CreateJob(string name, string url, int episode, int season)
     {
-        var jobDefinition = CreateJobDefinition(name, url, episode, season, seriesId);
+        var jobDefinition = CreateJobDefinition(name, url, episode, season);
         return Kubernetes.CreateNamespacedJobAsync(jobDefinition, Options.Namespace);
     }
 }
