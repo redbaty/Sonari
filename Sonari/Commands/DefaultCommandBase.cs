@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using CliFx.Attributes;
 using k8s.Models;
 using Microsoft.Extensions.Options;
@@ -37,7 +37,7 @@ public class DefaultCommandBase
     public string NfsPath { get; set; }
 
     [CommandOption("job-image", 'i', EnvironmentVariable = "JOB_IMAGE")]
-    public string JobImage { get; set; } = "redbaty/wasari:latest-kb";
+    public string JobImage { get; set; } = "redbaty/wasari:latest";
 
     [CommandOption("l-cpu", Converter = typeof(ResourceQuantityConverter), EnvironmentVariable = "CPU_LIMITS")]
     public ResourceQuantity? CpuLimits { get; set; }
