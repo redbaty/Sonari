@@ -17,4 +17,6 @@ public class KubernetesOptions
     public int? JobTtl { get; set; }
 
     public string Namespace { get; set; } = "default";
+    
+    public string Prefix { get; set; } = "job-sonari";
 }
