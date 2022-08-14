@@ -1,4 +1,4 @@
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using CliFx.Attributes;
 using k8s.Models;
 using Microsoft.Extensions.Options;
