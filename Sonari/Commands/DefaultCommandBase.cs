@@ -31,10 +31,10 @@ public class DefaultCommandBase
     public int TagId { get; set; }
 
     [CommandOption("nfs-host", 'h', EnvironmentVariable = "NFS_HOST")]
-    public string NfsHost { get; set; }
+    public string? NfsHost { get; set; }
 
     [CommandOption("nfs-path", 'p', EnvironmentVariable = "NFS_PATH")]
-    public string NfsPath { get; set; }
+    public string? NfsPath { get; set; }
 
     [CommandOption("job-image", 'i', EnvironmentVariable = "JOB_IMAGE")]
     public string JobImage { get; set; } = "redbaty/wasari:latest";
@@ -49,7 +49,7 @@ public class DefaultCommandBase
     public int? JobTtl { get; set; } = (int?)TimeSpan.FromMinutes(10).TotalSeconds;
 
     [CommandOption("namespace", 'n', EnvironmentVariable = "NAMESPACE")]
-    public string Namespace { get; set; }
+    public string? Namespace { get; set; }
 
     protected void PopulateOptions()
     {
