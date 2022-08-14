@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Sonari.Crunchyroll;
@@ -45,7 +45,7 @@ public class SonariService
         var todayUtc = DateTime.Now.ToUniversalTime();
 
         await foreach (var series in SonarrService.GetSeries().Where(i => i.Tags.Contains(tagId)))
-        await foreach (var episode in SonarrService.GetEpisodes(series.Id).Where(o => !string.IsNullOrEmpty(o.AirDate) && o.AirDateUtc <= todayUtc && o.EpisodeFileId == 0))
+        await foreach (var episode in SonarrService.GetEpisodes(series.Id).Where(o => !string.IsNullOrEmpty(o.AirDate) && o.AirDateUtc <= todayUtc && o.EpisodeFileId == 0 && o.SeasonNumber > 0 && o.AbsoluteEpisodeNumber > 0 && o.Monitored))
             yield return episode with { Series = series };
     }
 
