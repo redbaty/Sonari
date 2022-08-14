@@ -25,7 +25,22 @@ public class KubernetesService
             Value = environmentVariable.Value?.ToString()
         };
 
-    private V1Job CreateJobDefinition(string name, string url, int episode, int season)
+    public async IAsyncEnumerable<JobWithPods> GetJobsPods()
+    {
+        var jobs = await Kubernetes.ListNamespacedJobAsync(Options.Namespace);
+        foreach (var job in jobs.Items.Where(i => i.Name().StartsWith(Options.Prefix)))
+        {
+            var pods = await Kubernetes.ListNamespacedPodAsync(Options.Namespace, labelSelector: $"job-name={job.Spec.Template.Metadata.Labels["job-name"]}");
+            
+            yield return new JobWithPods
+            {
+                Job = job,
+                Pods = pods.Items.ToArray()
+            };
+        }
+    }
+
+    private V1Job CreateJobDefinition(string name, string url, int episode, int season, string? token)
     {
         const string mountPath = "/output";
         return new V1Job
@@ -37,6 +52,7 @@ public class KubernetesService
             Spec = new V1JobSpec
             {
                 TtlSecondsAfterFinished = Options.JobTtl,
+                BackoffLimit = 3,
                 Template = new V1PodTemplateSpec
                 {
                     Spec = new V1PodSpec
@@ -60,7 +76,8 @@ public class KubernetesService
                             {
                                 Name = "wasari",
                                 Image = Options.JobImage,
-                                Args = new[] { "crunchy", url, "-e", episode.ToString(), "-s", season.ToString(), "-o", mountPath },
+                                ImagePullPolicy = "Always",
+                                Args = new[] { "crunchy", url, "-e", episode.ToString(), "-s", season.ToString(), "-o", mountPath, "-j" },
                                 Env = GetEnvironmentVariables()
                                     .Where(i => i.Name.StartsWith("WASARI_"))
                                     .Concat(new[]
@@ -69,6 +86,11 @@ public class KubernetesService
                                         {
                                             Name = "NO_PROGRESS_BAR",
                                             Value = "1"
+                                        },
+                                        new V1EnvVar
+                                        {
+                                            Name = "WASARI_AUTH_TOKEN",
+                                            Value = token
                                         }
                                     })
                                     .ToArray(),
@@ -113,9 +135,11 @@ public class KubernetesService
             yield return jobsItem;
     }
 
-    public Task<V1Job> CreateJob(string name, string url, int episode, int season)
+    public Task<V1Status> DeleteJob(string name) => Kubernetes.DeleteNamespacedJobAsync(name, Options.Namespace);
+
+    public Task<V1Job> CreateJob(string name, string url, int episode, int season, string? token)
     {
-        var jobDefinition = CreateJobDefinition(name, url, episode, season);
+        var jobDefinition = CreateJobDefinition($"{Options.Prefix}-{name}", url, episode, season, token);
         return Kubernetes.CreateNamespacedJobAsync(jobDefinition, Options.Namespace);
     }
 }
