@@ -1,13 +1,4 @@
 ﻿namespace Sonari.Crunchyroll
 {
-    internal class ApiSignature
-    {
-        public string Bucket { get; init; }
-
-        public string Policy { get; init; }
-
-        public string Signature { get; init; }
-
-        public string KeyPairId { get; init; }
-    }
+    internal record ApiSignature(string Signature, string Policy, string Bucket, string KeyPairId);
 }

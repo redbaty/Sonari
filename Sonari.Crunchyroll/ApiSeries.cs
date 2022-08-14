@@ -2,7 +2,7 @@
 
 namespace Sonari.Crunchyroll;
 
-public class ApiSeries
+public record ApiSeries
 {
     [JsonPropertyName("slug_title")]
     public string? SlugTitle { get; init; }

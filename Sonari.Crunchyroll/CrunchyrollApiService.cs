@@ -28,13 +28,12 @@ namespace Sonari.Crunchyroll
             using var jsonDocument = await JsonDocument.ParseAsync(responseStream);
             var root = jsonDocument.RootElement;
 
-            return new ApiSignature
-            {
-                Bucket = root.GetPropertyByPath("cms.bucket").GetNonNullString(),
-                Policy = root.GetPropertyByPath("cms.policy").GetNonNullString(),
-                Signature = root.GetPropertyByPath("cms.signature").GetNonNullString(),
-                KeyPairId = root.GetPropertyByPath("cms.key_pair_id").GetNonNullString(),
-            };
+            return new ApiSignature(
+                root.GetPropertyByPath("cms.signature").GetNonNullString(),
+                root.GetPropertyByPath("cms.policy").GetNonNullString(),
+                root.GetPropertyByPath("cms.bucket").GetNonNullString(),
+                root.GetPropertyByPath("cms.key_pair_id").GetNonNullString()
+            );
         }
 
         private async Task<Url> BuildUrlFromSignature(string endpoint)
@@ -55,7 +54,7 @@ namespace Sonari.Crunchyroll
                 .SetQueryParam("locale", "en-US");
 
             var responseJson = await HttpClient.GetJsonAsync(url);
-            
+
             foreach (var jsonElement in responseJson.GetProperty("items").EnumerateArray())
             {
                 var apiSeries = jsonElement.Deserialize<ApiSeries>();
