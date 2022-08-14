@@ -9,8 +9,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="CliFx" Version="2.2.6" />
-      <PackageReference Include="KubernetesClient" Version="8.0.8" />
+      <PackageReference Include="CliFx" Version="2.3.0" />
+      <PackageReference Include="KubernetesClient" Version="8.0.12" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
       <PackageReference Include="Serilog" Version="2.11.0" />
       <PackageReference Include="Serilog.Extensions.Logging" Version="3.1.0" />
