@@ -86,7 +86,7 @@ public class SonariService
 
     private async Task<int> CreateJob(Episode missingEpisode, IReadOnlySet<string> existingJobs, string betaUrl)
     {
-        var jobName = $"{SonarrOptions.Prefix}-{missingEpisode.SeriesId}-s{missingEpisode.SeasonNumber:00}-e{missingEpisode.EpisodeNumber:000}";
+        var jobName = $"{missingEpisode.SeriesId}-s{missingEpisode.SeasonNumber:00}-e{missingEpisode.EpisodeNumber:000}";
 
         if (existingJobs.Contains(jobName))
         {
@@ -94,8 +94,21 @@ public class SonariService
             return 0;
         }
 
-        var job = await KubernetesService.CreateJob(jobName, betaUrl, missingEpisode.EpisodeNumber, missingEpisode.SeasonNumber);
-        Logger.LogInformation("Job created for episode {@Episode} {@JobName}", missingEpisode, job.Name());
-        return 1;
+        var job = await KubernetesService.CreateJob(jobName, betaUrl, missingEpisode.EpisodeNumber, missingEpisode.SeasonNumber, CrunchyrollApiServiceFactory.Token).ContinueWith(t =>
+        {
+            if (t.IsCompletedSuccessfully)
+                return t.Result;
+
+            Logger.LogError(t.Exception, "Failed to create job");
+            return null;
+        });
+
+        if (job != null)
+        {
+            Logger.LogInformation("Job created for episode {@Episode} {@JobName}", missingEpisode, job.Name());
+            return 1;
+        }
+
+        return 0;
     }
 }
