@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Net.Http.Json;
+using System.Text.Json;
 using Flurl;
 using JsonExtensions.Http;
 using JsonExtensions.Reading;
@@ -47,7 +48,13 @@ namespace Sonari.Crunchyroll
                 .SetQueryParam("locale", "en-US");
         }
 
-        public async IAsyncEnumerable<ApiSeries> SearchSeries(string searchTerm)
+        public async Task<ApiSeason?> GetSeason(string seasonId)
+        {
+            var url = await BuildUrlFromSignature($"seasons/{seasonId}");
+            return await HttpClient.GetFromJsonAsync<ApiSeason>(url);
+        }
+
+        public async IAsyncEnumerable<ApiSearchResult> SearchSeries(string searchTerm)
         {
             var url = await BuildUrlFromSignature("search");
             url = url.SetQueryParam("q", searchTerm)
@@ -57,10 +64,30 @@ namespace Sonari.Crunchyroll
 
             foreach (var jsonElement in responseJson.GetProperty("items").EnumerateArray())
             {
-                var apiSeries = jsonElement.Deserialize<ApiSeries>();
+                var apiSeries = jsonElement.Deserialize<ApiSearchResult>();
 
-                if (apiSeries != null && jsonElement.GetPropertyOrNull("type")?.GetString() == "series")
-                    yield return apiSeries;
+                if (apiSeries != null)
+                {
+                    if (apiSeries.Type == "season")
+                    {
+                        var seasonLink = apiSeries.Links.GetValueOrDefault("resource")?.Href;
+                        var seriesId = seasonLink?.Split('/')?.LastOrDefault();
+
+                        if (!string.IsNullOrEmpty(seriesId))
+                        {
+                            var season = await GetSeason(seriesId);
+
+                            if (season != null)
+                                yield return new ApiSearchResult
+                                {
+                                    Id = season.SeriesId,
+                                    SlugTitle = season.SlugTitle,
+                                    Type = "series"
+                                };
+                        }
+                    }
+                    else if (apiSeries.Type == "series") yield return apiSeries;
+                }
             }
         }
     }

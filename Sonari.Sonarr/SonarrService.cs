@@ -45,6 +45,15 @@ public class SonarrService
                 yield return episode;
     }
 
+    public async IAsyncEnumerable<Tag> GetTags()
+    {
+        var tagsArray = await HttpClient.GetFromJsonAsync<Tag[]>("tag");
+
+        if (tagsArray != null)
+            foreach (var tag in tagsArray)
+                yield return tag;
+    }
+
     public async IAsyncEnumerable<Series> GetSeries()
     {
         var seriesArray = await HttpClient.GetFromJsonAsync<Series[]>("series");

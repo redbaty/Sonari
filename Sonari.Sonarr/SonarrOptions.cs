@@ -7,4 +7,6 @@ public class SonarrOptions
     public string? Key { get; set; }
     
     public int TagId { get; set; }
+    
+    public int? _4KTagId { get; set; }
 }

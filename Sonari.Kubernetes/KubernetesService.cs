@@ -14,7 +14,7 @@ public class KubernetesService
     }
 
     private k8s.Kubernetes Kubernetes { get; }
-    
+
     private KubernetesOptions Options { get; }
 
     private static IEnumerable<V1EnvVar> GetEnvironmentVariables() =>
@@ -31,7 +31,7 @@ public class KubernetesService
         foreach (var job in jobs.Items.Where(i => i.Name().StartsWith(Options.Prefix)))
         {
             var pods = await Kubernetes.ListNamespacedPodAsync(Options.Namespace, labelSelector: $"job-name={job.Spec.Template.Metadata.Labels["job-name"]}");
-            
+
             yield return new JobWithPods
             {
                 Job = job,
@@ -40,9 +40,21 @@ public class KubernetesService
         }
     }
 
-    private V1Job CreateJobDefinition(string name, string url, int episode, int season, string? token)
+    private V1Job CreateJobDefinition(string name, string url, int episode, int season, string? token, string[] args, string? downloadPath)
     {
         const string mountPath = "/output";
+        var outputArgs = new List<string>()
+        {
+            "-o",
+            string.IsNullOrEmpty(downloadPath) ? mountPath : $"{mountPath}/{downloadPath}"
+        };
+
+        if (!string.IsNullOrEmpty(downloadPath))
+        {
+            outputArgs.Add("--series-folder");
+            outputArgs.Add("false");
+        }
+
         return new V1Job
         {
             Metadata = new V1ObjectMeta
@@ -57,6 +69,19 @@ public class KubernetesService
                 {
                     Spec = new V1PodSpec
                     {
+                        Affinity = new V1Affinity
+                        {
+                            NodeAffinity = new V1NodeAffinity
+                            {
+                                PreferredDuringSchedulingIgnoredDuringExecution = new List<V1PreferredSchedulingTerm>
+                                {
+                                    new(new V1NodeSelectorTerm(new List<V1NodeSelectorRequirement>
+                                    {
+                                        new("nvidia.com/gpu.count", "Gt", new List<string> { "0" })
+                                    }), 1)
+                                }
+                            }
+                        },
                         RestartPolicy = "Never",
                         Volumes = new V1Volume[]
                         {
@@ -70,6 +95,7 @@ public class KubernetesService
                                 }
                             }
                         },
+                        RuntimeClassName = Environment.GetEnvironmentVariable("POD_RUNTIME"),
                         Containers = new V1Container[]
                         {
                             new()
@@ -77,7 +103,10 @@ public class KubernetesService
                                 Name = "wasari",
                                 Image = Options.JobImage,
                                 ImagePullPolicy = "Always",
-                                Args = new[] { "crunchy", url, "-e", episode.ToString(), "-s", season.ToString(), "-o", mountPath, "-j" },
+                                Args = new[] { url, "-e", episode.ToString(), "-s", season.ToString(), "-v" }
+                                    .Concat(outputArgs)
+                                    .Concat(args)
+                                    .ToArray(),
                                 Env = GetEnvironmentVariables()
                                     .Where(i => i.Name.StartsWith("WASARI_"))
                                     .Concat(new[]
@@ -117,12 +146,15 @@ public class KubernetesService
     private Dictionary<string, ResourceQuantity> GetLimits()
     {
         var toReturn = new Dictionary<string, ResourceQuantity>();
-        
-        if(Options.JobCpuLimit != null)
+
+        if (Options.JobCpuLimit != null)
             toReturn.Add("cpu", Options.JobCpuLimit);
-        
-        if(Options.JobMemoryLimit != null)
+
+        if (Options.JobMemoryLimit != null)
             toReturn.Add("memory", Options.JobMemoryLimit);
+
+        if (Options.NvidiaGpuLimit != null)
+            toReturn.Add("nvidia.com/gpu", Options.NvidiaGpuLimit);
 
         return toReturn;
     }
@@ -137,9 +169,9 @@ public class KubernetesService
 
     public Task<V1Status> DeleteJob(string name) => Kubernetes.DeleteNamespacedJobAsync(name, Options.Namespace);
 
-    public Task<V1Job> CreateJob(string name, string url, int episode, int season, string? token)
+    public Task<V1Job> CreateJob(string name, string url, int episode, int season, string? token, string[] args, string? downloadPath)
     {
-        var jobDefinition = CreateJobDefinition($"{Options.Prefix}-{name}", url, episode, season, token);
+        var jobDefinition = CreateJobDefinition($"{Options.Prefix}-{name}", url, episode, season, token, args, downloadPath);
         return Kubernetes.CreateNamespacedJobAsync(jobDefinition, Options.Namespace);
     }
 }

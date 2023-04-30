@@ -13,6 +13,8 @@ public class KubernetesOptions
     public ResourceQuantity? JobCpuLimit { get; set; }
     
     public ResourceQuantity? JobMemoryLimit { get; set; }
+    
+    public ResourceQuantity? NvidiaGpuLimit { get; set; }
 
     public int? JobTtl { get; set; }
 

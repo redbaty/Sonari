@@ -13,26 +13,20 @@ namespace Sonari.Commands;
 [Command]
 public class DefaultCommand : DefaultCommandBase, ICommand
 {
-    public DefaultCommand(IServiceProvider serviceProvider, IOptions<SonarrOptions> sonarrOptions, IOptions<KubernetesOptions> kubernetesOptions) : base(kubernetesOptions, sonarrOptions)
-    {
-        ServiceProvider = serviceProvider;
-    }
-
     [CommandOption("c:username", EnvironmentVariable = "CRUNCHY_USERNAME")]
     public string? CrunchyUsername { get; set; }
-    
+
     [CommandOption("c:password", EnvironmentVariable = "CRUNCHY_PASSWORD")]
     public string? CrunchyPassword { get; set; }
-    
-    private IServiceProvider ServiceProvider { get; }
+
 
     public async ValueTask ExecuteAsync(IConsole console)
     {
-        PopulateOptions();
+        await PopulateOptions();
 
         if (!string.IsNullOrEmpty(Namespace))
             KubernetesOptions.Value.Namespace = Namespace;
-        
+
         await using var serviceScope = ServiceProvider.CreateAsyncScope();
         var sonariService = serviceScope.ServiceProvider.GetRequiredService<SonariService>();
         var crunchyrollFactory = serviceScope.ServiceProvider.GetRequiredService<CrunchyrollApiServiceFactory>();
@@ -53,5 +47,9 @@ public class DefaultCommand : DefaultCommandBase, ICommand
         }
 
         await sonariService.CreateJobs();
+    }
+
+    public DefaultCommand(IOptions<KubernetesOptions> kubernetesOptions, IOptions<SonarrOptions> sonarrOptions, IServiceProvider serviceProvider) : base(kubernetesOptions, sonarrOptions, serviceProvider)
+    {
     }
 }

@@ -1,4 +1,4 @@
-using k8s.Models;
+﻿using k8s.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Sonari.Crunchyroll;
@@ -11,6 +11,14 @@ namespace Sonari.App;
 
 public class SonariService
 {
+    private static readonly string[] Anime4KArguments = new[]
+    {
+        "--shader",
+        "anime4k",
+        "-r",
+        "4k"
+    };
+
     public SonariService(SonarrService sonarrService,
         CrunchyrollApiServiceFactory crunchyrollApiServiceFactory,
         KubernetesService kubernetesService,
@@ -45,13 +53,27 @@ public class SonariService
         var todayUtc = DateTime.Now.ToUniversalTime();
 
         await foreach (var series in SonarrService.GetSeries().Where(i => i.Tags.Contains(tagId)))
-        await foreach (var episode in SonarrService.GetEpisodes(series.Id).Where(o => !string.IsNullOrEmpty(o.AirDate) && o.AirDateUtc <= todayUtc && o.EpisodeFileId == 0 && o.SeasonNumber > 0 && o.AbsoluteEpisodeNumber > 0 && o.Monitored))
+        await foreach (var episode in SonarrService.GetEpisodes(series.Id)
+                           .Where(o => !string.IsNullOrEmpty(o.AirDate)
+                                       && o.AirDateUtc <= todayUtc
+                                       && o is { EpisodeFileId: 0, SeasonNumber: > 0, AbsoluteEpisodeNumber: > 0, Monitored: true }))
             yield return episode with { Series = series };
     }
 
     public Task<int> CreateJobs()
     {
         return CreateJobs(GetMissingEpisodes(SonarrOptions.TagId));
+    }
+
+    public async Task ClearNotFoundEpisodes()
+    {
+        await foreach (var jobWithPods in KubernetesService.GetJobsPods())
+        {
+            if (jobWithPods.Pods.All(o => o.Status.ContainerStatuses.SingleOrDefault()?.State?.Terminated is { ExitCode: 404 }))
+            {
+                await KubernetesService.DeleteJob(jobWithPods.Job.Name());
+            }
+        }
     }
 
     private async Task<int> CreateJobs(IAsyncEnumerable<Episode> missingEpisodes)
@@ -71,7 +93,10 @@ public class SonariService
     {
         var crunchySeries = await crunchyrollApiService
             .SearchSeries(missingEpisodesBySeries.Key.TitleSlug)
-            .SingleOrDefaultAsync(i => i.SlugTitle == missingEpisodesBySeries.Key.TitleSlug);
+            .Where(i => i.SlugTitle == missingEpisodesBySeries.Key.TitleSlug)
+            .GroupBy(i => new { i.Id, i.SlugTitle })
+            .Select(i => i.Key)
+            .SingleAsync();
 
         if (crunchySeries == null)
             throw new InvalidOperationException($"Failed to get url for series: {missingEpisodesBySeries.Key.Title}");
@@ -94,14 +119,20 @@ public class SonariService
             return 0;
         }
 
-        var job = await KubernetesService.CreateJob(jobName, betaUrl, missingEpisode.EpisodeNumber, missingEpisode.SeasonNumber, CrunchyrollApiServiceFactory.Token).ContinueWith(t =>
-        {
-            if (t.IsCompletedSuccessfully)
-                return t.Result;
+        var downloadPath = string.IsNullOrEmpty(missingEpisode.Series.Path) ? null : missingEpisode.Series.Path[(missingEpisode.Series.Path.IndexOf('/', 1) + 1)..];
 
-            Logger.LogError(t.Exception, "Failed to create job");
-            return null;
-        });
+        var job = await KubernetesService.CreateJob(jobName, betaUrl, missingEpisode.EpisodeNumber, missingEpisode.SeasonNumber, CrunchyrollApiServiceFactory.Token,
+                SonarrOptions._4KTagId.HasValue && missingEpisode.Series.Tags.Contains(SonarrOptions._4KTagId.Value)
+                    ? Anime4KArguments
+                    : Array.Empty<string>(), downloadPath)
+            .ContinueWith(t =>
+            {
+                if (t.IsCompletedSuccessfully)
+                    return t.Result;
+
+                Logger.LogError(t.Exception, "Failed to create job");
+                return null;
+            });
 
         if (job != null)
         {
