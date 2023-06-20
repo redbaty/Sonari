@@ -40,7 +40,7 @@ public class KubernetesService
         }
     }
 
-    private V1Job CreateJobDefinition(string name, string url, int episode, int season, string? token, string[] args, string? downloadPath)
+    private V1Job CreateJobDefinition(string name, string url, int episode, int season, string? token, IEnumerable<string> args, string? downloadPath)
     {
         const string mountPath = "/output";
         var outputArgs = new List<string>()
@@ -52,6 +52,12 @@ public class KubernetesService
         if (!string.IsNullOrEmpty(downloadPath))
         {
             outputArgs.Add("--series-folder");
+            outputArgs.Add("false");
+        }
+
+        if (Environment.GetEnvironmentVariable("NO_HEVC") is not null)
+        {
+            outputArgs.Add("--hevc");
             outputArgs.Add("false");
         }
 
@@ -169,7 +175,7 @@ public class KubernetesService
 
     public Task<V1Status> DeleteJob(string name) => Kubernetes.DeleteNamespacedJobAsync(name, Options.Namespace);
 
-    public Task<V1Job> CreateJob(string name, string url, int episode, int season, string? token, string[] args, string? downloadPath)
+    public Task<V1Job> CreateJob(string name, string url, int episode, int season, string? token, IEnumerable<string> args, string? downloadPath)
     {
         var jobDefinition = CreateJobDefinition($"{Options.Prefix}-{name}", url, episode, season, token, args, downloadPath);
         return Kubernetes.CreateNamespacedJobAsync(jobDefinition, Options.Namespace);
