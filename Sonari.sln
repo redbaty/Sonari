@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sonari.Kubernetes", "Sonari
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sonari.Crunchyroll", "Sonari.Crunchyroll\Sonari.Crunchyroll.csproj", "{66AEF43F-26FB-4191-96F6-852634BE3185}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sonari.WasariDaemon", "Sonari.WasariDaemon\Sonari.WasariDaemon.csproj", "{F44A55F4-8681-41B5-9D3B-5DED630C2219}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,10 +40,15 @@ Global
 		{66AEF43F-26FB-4191-96F6-852634BE3185}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{66AEF43F-26FB-4191-96F6-852634BE3185}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{66AEF43F-26FB-4191-96F6-852634BE3185}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F44A55F4-8681-41B5-9D3B-5DED630C2219}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F44A55F4-8681-41B5-9D3B-5DED630C2219}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F44A55F4-8681-41B5-9D3B-5DED630C2219}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F44A55F4-8681-41B5-9D3B-5DED630C2219}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{7F03117E-BD38-424A-9081-57CD59D45C87} = {BAF21BCA-2B7F-475F-9104-7AC9042D436F}
 		{FB46ED7D-7EEB-47CA-B722-5AD626BEEE32} = {BAF21BCA-2B7F-475F-9104-7AC9042D436F}
 		{66AEF43F-26FB-4191-96F6-852634BE3185} = {BAF21BCA-2B7F-475F-9104-7AC9042D436F}
+		{F44A55F4-8681-41B5-9D3B-5DED630C2219} = {BAF21BCA-2B7F-475F-9104-7AC9042D436F}
 	EndGlobalSection
 EndGlobal

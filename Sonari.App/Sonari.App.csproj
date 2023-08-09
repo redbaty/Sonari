@@ -10,6 +10,7 @@
         <ProjectReference Include="..\Sonari.Crunchyroll\Sonari.Crunchyroll.csproj" />
         <ProjectReference Include="..\Sonari.Kubernetes\Sonari.Kubernetes.csproj" />
         <ProjectReference Include="..\Sonari.Sonarr\Sonari.Sonarr.csproj" />
+        <ProjectReference Include="..\Sonari.WasariDaemon\Sonari.WasariDaemon.csproj" />
     </ItemGroup>
 
     <ItemGroup>

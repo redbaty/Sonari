@@ -7,6 +7,7 @@ using Sonari.Converters;
 using Sonari.Crunchyroll;
 using Sonari.Kubernetes;
 using Sonari.Sonarr;
+using Sonari.WasariDaemon;
 
 namespace Sonari;
 
@@ -19,6 +20,12 @@ internal static class Program
             .CreateLogger();
         
         var serviceCollection = new ServiceCollection();
+
+        if (Environment.GetEnvironmentVariable("DAEMON_URL") is { } daemonUrl && Uri.TryCreate(daemonUrl, UriKind.Absolute, out var daemonUri))
+        {
+            serviceCollection.AddWasariDaemonServices(daemonUri);
+        }
+        
         serviceCollection.AddScoped<DefaultCommand>();
         serviceCollection.AddScoped<CheckCommand>();
         serviceCollection.AddSonarrServices();

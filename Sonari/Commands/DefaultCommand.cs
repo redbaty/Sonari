@@ -18,8 +18,9 @@ public class DefaultCommand : DefaultCommandBase, ICommand
 
     [CommandOption("c:password", EnvironmentVariable = "CRUNCHY_PASSWORD")]
     public string? CrunchyPassword { get; set; }
-
-
+    
+    private IOptions<AuthenticationOptions> AuthenticationOptions => ServiceProvider.GetRequiredService<IOptions<AuthenticationOptions>>();
+    
     public async ValueTask ExecuteAsync(IConsole console)
     {
         await PopulateOptions();
@@ -29,24 +30,14 @@ public class DefaultCommand : DefaultCommandBase, ICommand
 
         await using var serviceScope = ServiceProvider.CreateAsyncScope();
         var sonariService = serviceScope.ServiceProvider.GetRequiredService<SonariService>();
-        var crunchyrollFactory = serviceScope.ServiceProvider.GetRequiredService<CrunchyrollApiServiceFactory>();
+        
+        AuthenticationOptions.Value.Username = CrunchyUsername;
+        AuthenticationOptions.Value.Password = CrunchyPassword;
 
-        if (!string.IsNullOrEmpty(CrunchyUsername) || !string.IsNullOrEmpty(CrunchyPassword))
-        {
-            if (string.IsNullOrEmpty(CrunchyUsername))
-                throw new InvalidOperationException("Failed to authenticate");
-
-            if (string.IsNullOrEmpty(CrunchyPassword))
-                throw new InvalidOperationException("Failed to authenticate");
-
-            await crunchyrollFactory.CreateAuthenticatedService(CrunchyUsername, CrunchyPassword);
-        }
+        if (WasariDaemonApi != null)
+            await sonariService.CreateRequestsToDaemonApi();
         else
-        {
-            await crunchyrollFactory.CreateUnauthenticatedService();
-        }
-
-        await sonariService.CreateJobs();
+            await sonariService.CreateJobs();
     }
 
     public DefaultCommand(IOptions<KubernetesOptions> kubernetesOptions, IOptions<SonarrOptions> sonarrOptions, IServiceProvider serviceProvider) : base(kubernetesOptions, sonarrOptions, serviceProvider)

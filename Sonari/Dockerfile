@@ -7,6 +7,7 @@ COPY ["Sonari/Sonari.csproj", "Sonari/"]
 COPY ["Sonari.App/Sonari.App.csproj", "Sonari.App/"]
 COPY ["Sonari.Crunchyroll/Sonari.Crunchyroll.csproj", "Sonari.Crunchyroll/"]
 COPY ["Sonari.Kubernetes/Sonari.Kubernetes.csproj", "Sonari.Kubernetes/"]
+COPY ["Sonari.WasariDaemon/Sonari.WasariDaemon.csproj", "Sonari.WasariDaemon/"]
 COPY ["Sonari.Sonarr/Sonari.Sonarr.csproj", "Sonari.Sonarr/"]
 RUN dotnet restore "Sonari/Sonari.csproj"
 COPY . .

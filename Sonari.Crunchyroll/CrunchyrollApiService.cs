@@ -8,7 +8,7 @@ namespace Sonari.Crunchyroll
 {
     public class CrunchyrollApiService
     {
-        internal CrunchyrollApiService(HttpClient httpClient)
+        public CrunchyrollApiService(HttpClient httpClient)
         {
             HttpClient = httpClient;
         }
@@ -56,37 +56,39 @@ namespace Sonari.Crunchyroll
 
         public async IAsyncEnumerable<ApiSearchResult> SearchSeries(string searchTerm)
         {
-            var url = await BuildUrlFromSignature("search");
-            url = url.SetQueryParam("q", searchTerm)
+            var url = "content/v1/search".SetQueryParam("q", searchTerm)
                 .SetQueryParam("locale", "en-US");
 
             var responseJson = await HttpClient.GetJsonAsync(url);
 
-            foreach (var jsonElement in responseJson.GetProperty("items").EnumerateArray())
+            foreach (var itemsRoot in responseJson.GetProperty("items").EnumerateArray())
             {
-                var apiSeries = jsonElement.Deserialize<ApiSearchResult>();
-
-                if (apiSeries != null)
+                foreach (var jsonElement in itemsRoot.GetProperty("items").EnumerateArray())
                 {
-                    if (apiSeries.Type == "season")
+                    var apiSeries = jsonElement.Deserialize<ApiSearchResult>();
+
+                    if (apiSeries != null)
                     {
-                        var seasonLink = apiSeries.Links.GetValueOrDefault("resource")?.Href;
-                        var seriesId = seasonLink?.Split('/')?.LastOrDefault();
-
-                        if (!string.IsNullOrEmpty(seriesId))
+                        if (apiSeries.Type == "season")
                         {
-                            var season = await GetSeason(seriesId);
+                            var seasonLink = apiSeries.Links.GetValueOrDefault("resource")?.Href;
+                            var seriesId = seasonLink?.Split('/')?.LastOrDefault();
 
-                            if (season != null)
-                                yield return new ApiSearchResult
-                                {
-                                    Id = season.SeriesId,
-                                    SlugTitle = season.SlugTitle,
-                                    Type = "series"
-                                };
+                            if (!string.IsNullOrEmpty(seriesId))
+                            {
+                                var season = await GetSeason(seriesId);
+
+                                if (season != null)
+                                    yield return new ApiSearchResult
+                                    {
+                                        Id = season.SeriesId,
+                                        SlugTitle = season.SlugTitle,
+                                        Type = "series"
+                                    };
+                            }
                         }
+                        else if (apiSeries.Type == "series") yield return apiSeries;
                     }
-                    else if (apiSeries.Type == "series") yield return apiSeries;
                 }
             }
         }

@@ -1,10 +1,12 @@
 ﻿using k8s.Models;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Sonari.Crunchyroll;
 using Sonari.Kubernetes;
 using Sonari.Sonarr;
 using Sonari.Sonarr.Models;
+using Sonari.WasariDaemon;
 using TomLonghurst.EnumerableAsyncProcessor.Extensions;
 
 namespace Sonari.App;
@@ -20,23 +22,22 @@ public class SonariService
     };
 
     public SonariService(SonarrService sonarrService,
-        CrunchyrollApiServiceFactory crunchyrollApiServiceFactory,
         KubernetesService kubernetesService,
         ILogger<SonariService> logger,
         IOptions<SonarrOptions> sonarrOptions,
-        IOptions<SonariOptions> sonariOptions)
+        IOptions<SonariOptions> sonariOptions, IServiceProvider serviceProvider,
+        CrunchyrollApiService crunchyrollApi)
     {
         SonarrService = sonarrService;
-        CrunchyrollApiServiceFactory = crunchyrollApiServiceFactory;
         KubernetesService = kubernetesService;
         Logger = logger;
+        ServiceProvider = serviceProvider;
+        CrunchyrollApi = crunchyrollApi;
         SonarrOptions = sonarrOptions.Value;
         SonariOptions = sonariOptions.Value;
     }
 
     private SonarrService SonarrService { get; }
-
-    private CrunchyrollApiServiceFactory CrunchyrollApiServiceFactory { get; }
 
     private KubernetesService KubernetesService { get; }
 
@@ -45,6 +46,10 @@ public class SonariService
     private SonarrOptions SonarrOptions { get; }
 
     private SonariOptions SonariOptions { get; }
+
+    private IServiceProvider ServiceProvider { get; }
+
+    private CrunchyrollApiService CrunchyrollApi { get; }
 
     private async IAsyncEnumerable<Episode> GetMissingEpisodes(int tagId)
     {
@@ -58,6 +63,35 @@ public class SonariService
                                        && o.AirDateUtc <= todayUtc
                                        && o is { EpisodeFileId: 0, SeasonNumber: > 0, AbsoluteEpisodeNumber: > 0, Monitored: true }))
             yield return episode with { Series = series };
+    }
+
+    public async Task<int> CreateRequestsToDaemonApi()
+    {
+        var wasariDaemonApi = ServiceProvider.GetRequiredService<IWasariDaemonApi>();
+        var createdRequests = 0;
+
+        await foreach (var missingEpisodesBySeries in GetMissingEpisodes(SonarrOptions.TagId).GroupBy(i => i.Series))
+        {
+            var betaUrl = await GetCrunchyrollUrl(CrunchyrollApi, missingEpisodesBySeries);
+            
+            await foreach (var missingEpisode in missingEpisodesBySeries)
+            {
+                var downloadPath = string.IsNullOrEmpty(missingEpisode.Series.Path) ? null : missingEpisode.Series.Path[(missingEpisode.Series.Path.IndexOf('/', 1) + 1)..];
+                createdRequests += await wasariDaemonApi.Download(new DownloadRequest(new Uri(betaUrl), missingEpisode.EpisodeNumber, missingEpisode.SeasonNumber, downloadPath)).ContinueWith(t =>
+                {
+                    if (t.IsCompletedSuccessfully)
+                    {
+                        Logger.LogInformation("Created request for {Episode}", missingEpisode);
+                        return 1;
+                    }
+                
+                    Logger.LogError(t.Exception, "Failed to create request for {Episode}", missingEpisode);
+                    return 0;
+                });
+            }
+        }
+
+        return createdRequests;
     }
 
     public Task<int> CreateJobs()
@@ -78,35 +112,47 @@ public class SonariService
 
     private async Task<int> CreateJobs(IAsyncEnumerable<Episode> missingEpisodes)
     {
-        var crunchyrollApiService = CrunchyrollApiServiceFactory.GetService();
         var episodesGroupedBySeries = await missingEpisodes.GroupBy(i => i.Series).ToArrayAsync();
 
         var processInParallel = await episodesGroupedBySeries.ToAsyncProcessorBuilder()
-            .SelectAsync(e => GetInformationAndCreateJob(crunchyrollApiService, e))
+            .SelectAsync(e => GetInformationAndCreateJob(CrunchyrollApi, e))
             .ProcessInParallel(SonariOptions.SonarrLevelOfParallelism)
             .GetResultsAsync();
 
         return processInParallel.Sum();
     }
 
-    private async Task<int> GetInformationAndCreateJob(CrunchyrollApiService crunchyrollApiService, IAsyncGrouping<Series, Episode> missingEpisodesBySeries)
+    private async Task<int> GetInformationAndCreateJob(CrunchyrollApiService crunchyrollDiscoverApi, IAsyncGrouping<Series, Episode> missingEpisodesBySeries)
     {
-        var crunchySeries = await crunchyrollApiService
-            .SearchSeries(missingEpisodesBySeries.Key.TitleSlug)
-            .Where(i => i.SlugTitle == missingEpisodesBySeries.Key.TitleSlug)
-            .GroupBy(i => new { i.Id, i.SlugTitle })
-            .Select(i => i.Key)
-            .SingleAsync();
-
-        if (crunchySeries == null)
-            throw new InvalidOperationException($"Failed to get url for series: {missingEpisodesBySeries.Key.Title}");
-
-        var betaUrl = $"https://beta.crunchyroll.com/series/{crunchySeries.Id}/{crunchySeries.SlugTitle}";
+        var betaUrl = await GetCrunchyrollUrl(crunchyrollDiscoverApi, missingEpisodesBySeries);
         var existingJobs = await KubernetesService.ListJobs()
             .Select(i => i.Name())
             .ToHashSetAsync();
 
         return await missingEpisodesBySeries.SelectAwait(async missingEpisode => await CreateJob(missingEpisode, existingJobs, betaUrl)).SumAsync();
+    }
+
+    private record CrunchyEpisode(string? Id, string? SlugTitle);
+
+    private static async Task<string> GetCrunchyrollUrl(CrunchyrollApiService crunchyrollApiService, IAsyncGrouping<Series, Episode> missingEpisodesBySeries)
+    {
+        var episodes = await crunchyrollApiService
+            .SearchSeries(missingEpisodesBySeries.Key.TitleSlug)
+            .GroupBy(i => i.Id)
+            .SelectAwait(i => i.FirstAsync())
+            .ToArrayAsync();
+        
+        var crunchySeries = episodes
+            .Where(i => i.SlugTitle == missingEpisodesBySeries.Key.TitleSlug)
+            .GroupBy(i => new CrunchyEpisode(i.Id, i.SlugTitle))
+            .Select(i => i.Key)
+            .SingleOrDefault();
+
+        if (crunchySeries == null && episodes.Length != 1)
+            throw new InvalidOperationException($"Failed to get url for series: {missingEpisodesBySeries.Key.Title} ({missingEpisodesBySeries.Key.TitleSlug})");
+
+        crunchySeries ??= new CrunchyEpisode(episodes.Single().Id, episodes.Single().SlugTitle);
+        return $"https://beta.crunchyroll.com/series/{crunchySeries.Id}/{crunchySeries.SlugTitle}";
     }
 
     private async Task<int> CreateJob(Episode missingEpisode, IReadOnlySet<string> existingJobs, string betaUrl)
@@ -121,7 +167,7 @@ public class SonariService
 
         var downloadPath = string.IsNullOrEmpty(missingEpisode.Series.Path) ? null : missingEpisode.Series.Path[(missingEpisode.Series.Path.IndexOf('/', 1) + 1)..];
 
-        var job = await KubernetesService.CreateJob(jobName, betaUrl, missingEpisode.EpisodeNumber, missingEpisode.SeasonNumber, CrunchyrollApiServiceFactory.Token,
+        var job = await KubernetesService.CreateJob(jobName, betaUrl, missingEpisode.EpisodeNumber, missingEpisode.SeasonNumber, null,
                 SonarrOptions._4KTagId.HasValue && missingEpisode.Series.Tags.Contains(SonarrOptions._4KTagId.Value)
                     ? Anime4KArguments
                     : Array.Empty<string>(), downloadPath)

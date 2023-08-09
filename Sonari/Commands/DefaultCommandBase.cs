@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Sonari.Converters;
 using Sonari.Kubernetes;
 using Sonari.Sonarr;
+using Sonari.WasariDaemon;
 
 namespace Sonari.Commands;
 
@@ -17,6 +18,7 @@ public class DefaultCommandBase
         KubernetesOptions = kubernetesOptions;
         SonarrOptions = sonarrOptions;
         ServiceProvider = serviceProvider;
+        WasariDaemonApi = serviceProvider.GetService<IWasariDaemonApi>();
     }
 
     protected IOptions<KubernetesOptions> KubernetesOptions { get; }
@@ -58,6 +60,8 @@ public class DefaultCommandBase
 
     [CommandOption("namespace", 'n', EnvironmentVariable = "NAMESPACE")]
     public string? Namespace { get; set; }
+    
+    protected IWasariDaemonApi? WasariDaemonApi { get; }
 
     protected IServiceProvider ServiceProvider { get; }
 
